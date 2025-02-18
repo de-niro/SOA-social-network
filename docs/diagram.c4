@@ -1,0 +1,104 @@
+specification {
+    element container
+    element service
+    element user
+    element post
+    element comment
+    element component
+}
+
+model {
+    user_a = user "User"
+    admin_a = user "Admin"
+
+    frontend = service "Frontend API" {
+        gateway = container "Gateway" {
+            description "Parsing requests from frontend"
+            technology "Flask"
+        }
+        
+        restapi = component "REST API for the frontend"
+    }
+
+    users = service "Users management" {
+        users_service = container "Users service" {
+            description "Managing user logon/registration"
+            technology "Go"
+        }
+
+        users_db = container "Users database" {
+            technology "Postgres"
+        }
+
+        mail = container "Mail service" {
+            description "Mailing service for registration"
+            technology "Fiber"
+        }
+
+        users_api = component "API for users management"
+    }
+
+    posts = service "Posts" {
+        posts_service = container "Posts service" {
+            description "Managing posts and comments"
+            technology "Go, C++"
+        }
+
+        posts_db = container "Posts/comments database" {
+            technology "Postgres"
+        }
+
+        events = container "User interactions broker" {
+            description "Message broker that writes user interactions events to topics"
+            technology "Kafka"
+        }
+
+        posts_api = component "API for posts/comments management"
+        //events_topics = component "Users interactions messages"
+    }
+
+    stats = service "Statistics" {
+        stats_service = container "Stats management client" {
+            description "Fetching data from topics and writing to the database"
+            technology "Go"
+        }
+
+        stats_db = container "Stats database" {
+            technology "Clickhouse"
+        }
+
+        grafana = container "Grafana dashboard" {
+            description "Grafana with SQL plugin for stats visualizations"
+        }
+
+        stats_api = component "Stats API"
+        stats_consumer = component "Stats Kafka consumer"
+    }
+
+    user_a -> frontend.restapi "Uses" "HTTPS"
+
+    frontend.gateway -> users.users_api "Redirects" "JSON/HTTPS"
+    frontend.gateway -> posts.posts_api "Redirects" "JSON/HTTPS"
+    frontend.gateway -> posts.posts_api "Redirects" "JSON/HTTPS"
+
+    users.users_service -> users.users_db "Reads/writes" "SQL"
+    users.users_service -> users.mail "Sends" "gRPC"
+    posts.posts_service -> posts.posts_db "Reads/writes" "SQL"
+    posts.posts_service -> posts.events "Writes to" "TCP"
+    posts.events -> stats.stats_consumer "Produces" "TCP"
+    users.users_service -> posts.posts_api "Notifies" "gRPC"
+
+    stats.stats_service -> stats.stats_db "Reads/writes" "SQL"
+    stats.stats_consumer -> stats.stats_service "Reads from" "TCP"
+    stats.stats_db -> stats.grafana "Displays" "HTTPS"
+
+    users.users_service -> posts.posts_service "Interacts" "gRPC"
+    posts.posts_service -> stats.stats_service "Interacts" "gRPC"
+    admin_a -> stats.grafana "Uses" "HTTPS"
+}
+
+views {
+    view index {
+        include *
+    }
+}
