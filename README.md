@@ -1,3 +1,3 @@
 # Social network SOA project
 
-savchuk anrey 233 DSBA
+savchuk anrey 223 DSBA
