@@ -1,6 +1,9 @@
 package main
 
-import "time"
+import (
+	"errors"
+	"time"
+)
 
 type UserInstance struct {
 	id             int
@@ -47,4 +50,19 @@ func AccountStatusString(status int) string {
 	case AccountStatusZombie:
 		return "Zombie"
 	}
+	return "Unknown"
+}
+
+func AccountStatusEnum(status string) (int, error) {
+	switch status {
+	case "Active":
+		return AccountStatusActive, nil
+	case "Admin":
+		return AccountStatusAdmin, nil
+	case "Disabled":
+		return AccountStatusDisabled, nil
+	case "Zombie":
+		return AccountStatusZombie, nil
+	}
+	return 0, errors.New("BAD_ACCOUNT_STATUS")
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"strconv"
 	"strings"
 )
@@ -18,7 +19,7 @@ func concat(s ...string) string {
 
 // Semi-efficient zeros repeat
 func repeat_zeros(times int) string {
-	s := make([]byte, times)
+	s := bytes.Repeat([]byte{'0'}, times)
 	return string(s)
 }
 

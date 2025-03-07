@@ -13,16 +13,18 @@ type Config interface {
 }
 
 type EnvConfig struct {
-	Host   string `env:"HOST" envDefault:"localhost"`
-	Port   string `env:"PORT" envDefault:"5432"`
-	User   string `env:"USER" envDefault:"postgres"`
-	Pass   string `env:"PASS"`
-	DbName string `env:"DB_NAME" envDefault:"postgres"`
+	ServerHost string `env:"SERVER_HOST" envDefault:"localhost"`
+	ServerPort string `env:"SERVER_PORT" envDefault:"8080"`
+	DBHost     string `env:"DB_HOST" envDefault:"localhost"`
+	DBPort     string `env:"DB_PORT" envDefault:"5432"`
+	DBUser     string `env:"DB_USER" envDefault:"postgres"`
+	DBPass     string `env:"DB_PASS"`
+	DBName     string `env:"DB_NAME" envDefault:"postgres"`
 }
 
 func initEnvConfig() (EnvConfig, error) {
 	var c EnvConfig
-	if c.Pass == "" {
+	if c.DBPass == "" {
 		fmt.Println("EnvConfig::init() : missing password")
 		return c, errors.New("missing password")
 	}
@@ -30,16 +32,16 @@ func initEnvConfig() (EnvConfig, error) {
 }
 
 func (c *EnvConfig) getConnString() string {
-	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", c.Host, c.Port, c.User, c.Pass, c.DbName)
+	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", c.DBHost, c.DBPort, c.DBUser, c.DBPass, c.DBName)
 }
 
 func main() {
-	// Generate a connection string
 	conf, err := initEnvConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// Generate a connection string
 	connString := conf.getConnString()
 	db, err := sql.Open("postgres", connString)
 	if err != nil {
@@ -56,6 +58,10 @@ func main() {
 		log.Fatalf("main() : init db schema : %v", err)
 	}
 
+	hostAddr := concat(conf.ServerHost, ":", conf.ServerPort)
+	log.Printf("main() : serving at %v", hostAddr)
+
+	execLoopIgnition(db, hostAddr)
 	defer exit(db)
 }
 
