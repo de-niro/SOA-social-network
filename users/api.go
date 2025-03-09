@@ -26,7 +26,7 @@ func execLoopIgnition(db *sql.DB, addr string) {
 
 	sh := api.NewStrictHandler(server, nil)
 	api.RegisterHandlers(r, sh)
-	s := &http.Server{
+	s := &http.Server{ // TODO setup HTTPS
 		Addr:    addr,
 		Handler: r,
 	}

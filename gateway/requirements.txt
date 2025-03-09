@@ -1,0 +1,6 @@
+openapi-python-client
+flask
+flask[async]
+flask-httpauth
+aiohttp
+PyJWT
