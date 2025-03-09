@@ -63,7 +63,7 @@ func (UsersAPIServer) PostLogin(ctx context.Context, request api.PostLoginReques
 		return api.PostLogindefaultJSONResponse{Body: api.Error{Text: &errText}}, nil
 	}
 
-	cred, err := getUserCredentials(db, id)
+	cred, err := getUserCredentialsByID(db, id)
 	if err != nil {
 		errText := "NO_SUCH_USER"
 		return api.PostLogindefaultJSONResponse{Body: api.Error{Text: &errText}}, nil
@@ -134,6 +134,8 @@ func (UsersAPIServer) PostEditInfo(ctx context.Context, request api.PostEditInfo
 		}
 	}
 
+	info.user_update = time.Now()
+
 	err = editUserInfo(db, &info)
 	if err != nil {
 		return nil, err
@@ -142,7 +144,41 @@ func (UsersAPIServer) PostEditInfo(ctx context.Context, request api.PostEditInfo
 }
 
 func (UsersAPIServer) PostEditCredentials(ctx context.Context, request api.PostEditCredentialsRequestObject) (api.PostEditCredentialsResponseObject, error) {
-	return nil, errors.New("NOT_IMPLEMENTED")
+	db := ctx.Value("db").(*sql.DB)
+
+	cred, err := getUserCredentialsByID(db, *request.Body.Id)
+	if err != nil {
+		text := "NO_SUCH_USER"
+		return api.PostEditCredentialsdefaultJSONResponse{Body: api.Error{Text: &text}}, nil
+	}
+
+	// Crappy struct fields update
+	if *request.Body.Credentials.Username != "" {
+		cred.username = *request.Body.Credentials.Username
+	}
+
+	if request.Body.Credentials.Passwd != "" {
+		cred.passwd_hash = request.Body.Credentials.Passwd
+	}
+
+	if *request.Body.Credentials.Phone != "" {
+		cred.phone = *request.Body.Credentials.Phone
+	}
+
+	if *request.Body.Credentials.Email != "" {
+		cred.email = *request.Body.Credentials.Email
+	}
+
+	if checkIfUserExists(db, cred) {
+		errText := "USER_ALREADY_EXISTS"
+		return api.PostEditCredentialsdefaultJSONResponse{Body: api.Error{Text: &errText}}, nil
+	}
+
+	err = editUserCredentials(db, &cred, time.Now())
+	if err != nil {
+		return nil, err
+	}
+	return api.PostEditCredentials201Response{}, nil
 }
 
 func (UsersAPIServer) GetEmailVerify(ctx context.Context, request api.GetEmailVerifyRequestObject) (api.GetEmailVerifyResponseObject, error) {

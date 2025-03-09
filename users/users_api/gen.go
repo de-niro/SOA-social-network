@@ -49,6 +49,12 @@ type User struct {
 	Username           *string `json:"username,omitempty"`
 }
 
+// UserCredentials defines model for UserCredentials.
+type UserCredentials struct {
+	Credentials *UserLogon `json:"credentials,omitempty"`
+	Id          *int       `json:"id,omitempty"`
+}
+
 // UserLogon defines model for UserLogon.
 type UserLogon struct {
 	Email    *string `json:"email,omitempty"`
@@ -74,7 +80,7 @@ type UserReg struct {
 }
 
 // PostEditCredentialsJSONRequestBody defines body for PostEditCredentials for application/json ContentType.
-type PostEditCredentialsJSONRequestBody = UserLogon
+type PostEditCredentialsJSONRequestBody = UserCredentials
 
 // PostEditInfoJSONRequestBody defines body for PostEditInfo for application/json ContentType.
 type PostEditInfoJSONRequestBody = User

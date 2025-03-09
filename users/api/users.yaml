@@ -105,7 +105,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserLogon'
+              $ref: '#/components/schemas/UserCredentials'
       responses:
         '201':
           description: Upstring successful
@@ -210,6 +210,14 @@ components:
           type: string
       required:
         - passwd
+
+    UserCredentials:
+      type: object
+      properties:
+        credentials:
+          $ref: '#/components/schemas/UserLogon'
+        id:
+          type: integer
 
     UserLogonToken:
       type: object

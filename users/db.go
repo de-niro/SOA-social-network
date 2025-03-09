@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"log"
+	"time"
 )
 
 func initSchema(db *sql.DB) error {
@@ -112,9 +113,15 @@ func getUserInfoByID(db *sql.DB, id int) (UserInstance, error) {
 	return user, err
 }
 
-func getUserCredentials(db *sql.DB, id int) (UserCredentials, error) {
+func getUserCredentialsByID(db *sql.DB, id int) (UserCredentials, error) {
 	var user UserCredentials
 	err := db.QueryRow("SELECT id, username, email, phone, passwd_hash FROM users WHERE id=$1", id).Scan(&user.id, &user.username, &user.email, &user.phone, &user.passwd_hash)
+	return user, err
+}
+
+func getUserCredentialsByUsername(db *sql.DB, username string) (UserCredentials, error) {
+	var user UserCredentials
+	err := db.QueryRow("SELECT id, username, email, phone, passwd_hash FROM users WHERE username=$1", username).Scan(&user.id, &user.username, &user.email, &user.phone, &user.passwd_hash)
 	return user, err
 }
 
@@ -148,5 +155,11 @@ func createUser(db *sql.DB, u *UserInstance) error {
 func editUserInfo(db *sql.DB, u *UserInstance) error {
 	var id int
 	err := db.QueryRow("UPDATE users SET (user_update, bday, full_name, bio, account_status) = ($2, $3, $4, $5, $6) WHERE id=$1 RETURNING id", u.id, u.user_update, u.bday, u.full_name, u.bio, u.account_status).Scan(&id)
+	return err
+}
+
+func editUserCredentials(db *sql.DB, u *UserCredentials, updateTime time.Time) error {
+	var id int
+	err := db.QueryRow("UPDATE users SET (user_update, username, phone, email, passwd_hash) = ($2, $3, $4, $5, $6) WHERE id=$1 RETURNING id", u.id, updateTime, u.username, u.phone, u.email, u.passwd_hash).Scan(&id)
 	return err
 }

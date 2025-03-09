@@ -25,7 +25,7 @@ type EnvConfig struct {
 func initEnvConfig() (EnvConfig, error) {
 	var c EnvConfig
 	if c.DBPass == "" {
-		fmt.Println("EnvConfig::init() : missing password")
+		fmt.Println("EnvConfig::init() : missing password, variable $DB_PASS is unset")
 		return c, errors.New("missing password")
 	}
 	return c, nil
