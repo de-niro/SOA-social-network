@@ -81,12 +81,13 @@ async def login():
 async def get_user(username: str):
     async with gateway.client.get('/users/' + username, data=request.data) as resp:
         r = await gateway.response_aio2flask(resp)
-        resp_json = await resp.json()
-        user_id = resp_json["id"]
+        if r.status == 200:
+            resp_json = await resp.json()
+            user_id = resp_json["id"]
 
-        # Check if the user id matches
-        if not gateway.auth.current_user() == user_id:
-            return gateway.generate_401(r.headers)
+            # Check if the user id matches
+            if not gateway.auth.current_user() == user_id:
+                return gateway.generate_401(r.headers)
 
         return r
 
