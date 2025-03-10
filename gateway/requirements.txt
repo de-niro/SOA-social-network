@@ -4,3 +4,5 @@ flask[async]
 flask-httpauth
 aiohttp
 PyJWT
+asgiref
+hypercorn
