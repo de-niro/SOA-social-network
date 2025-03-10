@@ -24,17 +24,20 @@ class AuthManager:
 """
 
 
+app = Flask(__name__)
+conf = config.Config()
+app.config.from_object(conf)
+
+
 class FlaskGateway:
-    app = Flask(__name__)
-    conf = config.Config()
-    app.config.from_object(conf)
     auth = HTTPTokenAuth(scheme='Bearer')
+    client = None
 
     def __init__(self):
-        self.conf.verify()
+        conf.verify()
 
     def run(self):
-        self.app.run(self.conf.HOST, self.conf.PORT)
+        app.run(conf.HOST, conf.PORT)
 
     def set_auth_header(self, resp: Response, token: str):
         resp.headers['Authorization'] = 'Bearer ' + token
@@ -53,77 +56,86 @@ class FlaskGateway:
         flask_response = Response(response=body, status=status, headers=headers)
         return flask_response
 
-    @app.before_request
-    def post_init(self):
-        self.app.before_request_funcs[None].remove(self.post_init)
-        self.client = aiohttp.ClientSession(self.conf.USERS_API_BASE_URL)
-
-    @app.route('/login', methods=['POST'])
-    async def login(self):
-        async with self.client.post('/login', data=request.data) as resp:
-            r = await self.response_aio2flask(resp)
-            if resp.status == 201:
-                resp_json = await resp.json()
-                user_id = resp_json["id"]
-                token = self.generate_auth_token(user_id)
-
-                self.set_auth_header(r, token)
-            return r
-
     def generate_401(self, headers=None):
         return Response(status=401, response="NOT_AUTHORIZED", headers=headers)
 
-    @auth.login_required
-    @app.route('/users/<username>')
-    async def get_user(self, username: str):
-        async with self.client.get('/users/' + username, data=request.data) as resp:
-            r = await self.response_aio2flask(resp)
+
+gateway = FlaskGateway()
+
+
+@app.before_request
+async def post_init():
+    app.before_request_funcs[None].remove(post_init)
+    gateway.client = aiohttp.ClientSession(conf.USERS_API_BASE_URL)
+
+
+@app.route('/login', methods=['POST'])
+async def login():
+    async with gateway.client.post('/login', data=request.data) as resp:
+        r = await gateway.response_aio2flask(resp)
+        if resp.status == 201:
             resp_json = await resp.json()
             user_id = resp_json["id"]
+            token = gateway.generate_auth_token(user_id)
 
-            # Check if the user id matches
-            if not self.auth.current_user() == user_id:
-                return self.generate_401(r.headers)
+            gateway.set_auth_header(r, token)
+        return r
 
-            return r
 
-    @app.route('/register', methods=["POST"])
-    async def register(self):
-        async with self.client.post('/register', data=request.data) as resp:
-            r = await self.response_aio2flask(resp)
-            return r
+@gateway.auth.login_required
+@app.route('/users/<username>')
+async def get_user(username: str):
+    async with gateway.client.get('/users/' + username, data=request.data) as resp:
+        r = await gateway.response_aio2flask(resp)
+        resp_json = await resp.json()
+        user_id = resp_json["id"]
 
-    @auth.login_required
-    @app.route('/edit/info', methods=["POST"])
-    async def edit_info(self):
-        user_info = request.json()
-        if not self.auth.current_user() == user_info["id"]:
-            return self.generate_401()
+        # Check if the user id matches
+        if not gateway.auth.current_user() == user_id:
+            return gateway.generate_401(r.headers)
 
-        async with self.client.post('/edit/info', data=request.data) as resp:
-            r = await self.response_aio2flask(resp)
-            return r
+        return r
 
-    @auth.login_required
-    @app.route('/edit/credentials', methods=["POST"])
-    async def edit_cred(self):
-        user_info = request.json()
-        if not self.auth.current_user() == user_info["id"]:
-            return self.generate_401()
 
-        async with self.client.post('/edit/credentials', data=request.data) as resp:
-            r = await self.response_aio2flask(resp)
-            return r
+@app.route('/register', methods=["POST"])
+async def register():
+    async with gateway.client.post('/register', data=request.data) as resp:
+        r = await gateway.response_aio2flask(resp)
+        return r
 
-    @auth.verify_token
-    def verify_token(self, token):
-        try:
-            payload = jwt.decode(token, self.conf.SECRET_KEY, algorithms=['HS256'])
 
-            # Extract user ID from the payload
-            return payload.get('user_id')
-        except jwt.ExpiredSignatureError or jwt.InvalidTokenError:
-            return None
+@gateway.auth.login_required
+@app.route('/edit/info', methods=["POST"])
+async def edit_info(self):
+    user_info = request.json()
+    if not self.auth.current_user() == user_info["id"]:
+        return self.generate_401()
+
+    async with self.client.post('/edit/info', data=request.data) as resp:
+        r = await self.response_aio2flask(resp)
+        return r
+
+
+@gateway.auth.login_required
+@app.route('/edit/credentials', methods=["POST"])
+async def edit_cred():
+    user_info = request.json()
+    if not gateway.auth.current_user() == user_info["id"]:
+        return gateway.generate_401()
+
+    async with gateway.client.post('/edit/credentials', data=request.data) as resp:
+        r = await gateway.response_aio2flask(resp)
+        return r
+
+@gateway.auth.verify_token
+def verify_token(token):
+    try:
+        payload = jwt.decode(token, conf.SECRET_KEY, algorithms=['HS256'])
+
+        # Extract user ID from the payload
+        return payload.get('user_id')
+    except jwt.ExpiredSignatureError or jwt.InvalidTokenError:
+        return None
 
 
 def main():

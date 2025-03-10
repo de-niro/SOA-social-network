@@ -8,11 +8,11 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -v ./...
+RUN go build -o ./users -v .
 
 RUN cp ./users /usr/local/bin/app
 
 EXPOSE 8080
 
-CMD ["app"]
+ENTRYPOINT ["app"]
 #ENTRYPOINT ["top", "-b"]
