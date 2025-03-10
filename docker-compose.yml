@@ -1,0 +1,50 @@
+services:
+  db:
+    image: postgres
+    restart: unless-stopped
+    shm_size: 128mb
+    environment:
+      POSTGRES_PASSWORD: p0mv8uq3t_3rfq
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    hostname: postgres
+    networks:
+      - users_net
+
+  users:
+    #image: users
+    build: ./users
+    environment:
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 8080
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASS: p0mv8uq3t_3rfq 
+      DB_NAME: postgres
+    hostname: users
+    networks:
+      - users_net
+      - gateway_net
+
+  gateway:
+    #image: gateway
+    build: ./gateway
+    ports:
+      - 8080:8080
+    environment:
+      SECRET_KEY: 98dn7ncq39up4c_2fRVQ
+      USERS_API_BASE_URL: "http://users:8080"
+      GATEWAY_HOST: "0.0.0.0"
+      GATEWAY_PORT: 8080
+    networks:
+      - gateway_net
+      - frontend
+
+networks:
+  gateway_net:
+    
+  users_net:
+
+  frontend:
+    driver: bridge

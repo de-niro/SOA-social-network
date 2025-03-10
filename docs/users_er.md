@@ -3,9 +3,12 @@ erDiagram
 	user {
 		int userid PK
 		date registration
-		varchar username
-		varchar full_name
-		varchar email
+		date user_update
+		date bday
+		char username
+		char full_name
+		char email
+		char phone
 		varchar bio
 		char password_hash
 		int account_status

@@ -1,0 +1,254 @@
+openapi: 3.0.0
+info:
+  title: Users management API
+  description: Users management API
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8000'
+    description: Local development environment
+paths:
+  /users/{username}:
+    get:
+      summary: Get user info by username
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: username
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+          content: {}
+
+  /register:
+    post:
+      summary: Register a new user
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserReg'
+        required: true
+      responses:
+        '201':
+          description: User registered
+        default:
+          description: Registration error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /login:
+    post:
+      summary: Session logon
+      security:
+        - BearerAuth: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLogon'
+        required: true
+      responses:
+        '201':
+          description: Logon successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserLogonToken'
+        default:
+          description: Logon error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /edit/info:
+    post:
+      summary: Edit user info
+      security:
+        - BearerAuth: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      responses:
+        '201':
+          description: Upstring successful
+        default:
+          description: Could not edit info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /edit/credentials:
+    post:
+      summary: Edit user credentials
+      security:
+        - BearerAuth: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCredentials'
+      responses:
+        '201':
+          description: Upstring successful
+        default:
+          description: Could not edit credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /email/verify:
+    get:
+      summary: Get verification status
+      security:
+        - BearerAuth: [ ]
+      responses:
+        '200':
+          description: Email verification status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailVerificationStatus'
+    post:
+      summary: Perform email verification
+      security:
+        - BearerAuth: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailVerificationToken'
+        required: true
+      responses:
+        '201':
+          description: Email verified
+        default:
+          description: Email verification failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        registration_string:
+          type: string
+        update_string:
+          type: string
+        full_name:
+          type: string
+        birthday:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        bio:
+          type: string
+        account_status:
+          type: string # Converted from enum
+        email_verified:
+          type: boolean
+
+    UserReg:
+      type: object
+      properties:
+        username:
+          type: string
+        full_name:
+          type: string
+        birthday:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        passwd:
+          type: string
+      required:
+        - username
+        - email
+        - phone
+        - passwd
+
+    UserLogon:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        passwd:
+          type: string
+      required:
+        - passwd
+
+    UserCredentials:
+      type: object
+      properties:
+        credentials:
+          $ref: '#/components/schemas/UserLogon'
+        id:
+          type: integer
+
+    UserLogonToken:
+      type: object
+      properties:
+        id:
+          type: integer
+        auth_token:
+          type: string
+
+    EmailVerificationStatus:
+      type: object
+      properties:
+        deadline:
+          type: string
+        status:
+          type: string # Converted from enum
+
+    EmailVerificationToken:
+      type: object
+      properties:
+        token:
+          type: string
+
+    Error:
+      type: object
+      properties:
+        text:
+          type: string
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
